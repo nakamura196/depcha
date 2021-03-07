@@ -135,7 +135,7 @@
                     <tr>
                       <th width="30%">{{ 'From' }}</th>
                       <th width="30%">{{ 'To' }}</th>
-                      <th width="40%">{{ 'Description' }}</th>
+                      <th width="40%">{{ 'Commodity (Freq)' }}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -165,7 +165,7 @@
                     <tr>
                       <th width="30%">{{ 'From' }}</th>
                       <th width="30%">{{ 'To' }}</th>
-                      <th width="40%">{{ 'Description' }}</th>
+                      <th width="40%">{{ 'Commodity (Freq)' }}</th>
                     </tr>
                   </thead>
                   <tbody>

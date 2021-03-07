@@ -288,9 +288,6 @@ export default class search extends Vue {
 </script>
 
 <style>
-tbody tr:nth-of-type(odd) {
-  background-color: rgba(0, 0, 0, 0.05);
-}
 * {
   text-transform: none !important;
 }

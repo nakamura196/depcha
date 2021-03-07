@@ -127,23 +127,27 @@
                 <small>{{ 'From' }}</small>
               </h3></v-sheet
             >
-            <v-list dense style="max-height: 200px; overflow-y: auto">
-              <v-list-item v-for="(item, key) in fromArray" :key="key">
-                <v-list-item-avatar>
-                  <v-img :src="nodesMap[item.from].image"></v-img>
-                </v-list-item-avatar>
 
-                <v-list-item-content>
-                  <v-list-item-title
-                    v-text="nodesMap[item.from].label"
-                  ></v-list-item-title>
-                </v-list-item-content>
-
-                <v-list-item-action>
-                  {{ item.title }}
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
+            <div style="max-height: 200px; overflow-y: auto" class="mb-5">
+              <v-simple-table>
+                <template #default>
+                  <thead>
+                    <tr>
+                      <th width="30%">{{ 'From' }}</th>
+                      <th width="30%">{{ 'To' }}</th>
+                      <th width="40%">{{ 'Description' }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, key) in fromArray" :key="key">
+                      <td width="30%">{{ nodesMap[item.from].label }}</td>
+                      <td width="30%">{{ nodesMap[item.to].label }}</td>
+                      <td width="40%">{{ item.title }}</td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+            </div>
           </div>
 
           <div v-if="toArray.length > 0">
@@ -153,23 +157,27 @@
                 <small>{{ 'To' }}</small>
               </h3></v-sheet
             >
-            <v-list dense style="max-height: 200px; overflow-y: auto">
-              <v-list-item v-for="(item, key) in toArray" :key="key">
-                <v-list-item-avatar>
-                  <v-img :src="nodesMap[item.to].image"></v-img>
-                </v-list-item-avatar>
 
-                <v-list-item-content>
-                  <v-list-item-title
-                    v-text="nodesMap[item.to].label"
-                  ></v-list-item-title>
-                </v-list-item-content>
-
-                <v-list-item-action>
-                  {{ item.title }}
-                </v-list-item-action>
-              </v-list-item>
-            </v-list>
+            <div style="max-height: 200px; overflow-y: auto">
+              <v-simple-table>
+                <template #default>
+                  <thead>
+                    <tr>
+                      <th width="30%">{{ 'From' }}</th>
+                      <th width="30%">{{ 'To' }}</th>
+                      <th width="40%">{{ 'Description' }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, key) in toArray" :key="key">
+                      <td width="30%">{{ nodesMap[item.from].label }}</td>
+                      <td width="30%">{{ nodesMap[item.to].label }}</td>
+                      <td width="40%">{{ item.title }}</td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+            </div>
           </div>
         </v-col>
         <v-col cols="12" :sm="9">

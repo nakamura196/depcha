@@ -142,7 +142,9 @@
                     <tr v-for="(item, key) in fromArray" :key="key">
                       <td width="30%">{{ nodesMap[item.from].label }}</td>
                       <td width="30%">{{ nodesMap[item.to].label }}</td>
-                      <td width="40%">{{ item.title }}</td>
+                      <td width="40%" :style="`color: ${colors[item.slug]}`">
+                        {{ item.title }}
+                      </td>
                     </tr>
                   </tbody>
                 </template>
@@ -172,7 +174,9 @@
                     <tr v-for="(item, key) in toArray" :key="key">
                       <td width="30%">{{ nodesMap[item.from].label }}</td>
                       <td width="30%">{{ nodesMap[item.to].label }}</td>
-                      <td width="40%">{{ item.title }}</td>
+                      <td width="40%" :style="`color: ${colors[item.slug]}`">
+                        {{ item.title }}
+                      </td>
                     </tr>
                   </tbody>
                 </template>
@@ -184,6 +188,7 @@
           <v-row>
             <v-col cols="12" :sm="9">
               <network
+                id="mynetwork"
                 ref="network"
                 :nodes="nodes"
                 :edges="edges"
@@ -195,13 +200,36 @@
               </network>
             </v-col>
             <v-col cols="12" :sm="3">
+              <!-- Main -->
+              <v-sheet class="grey lighten-3 pa-2"
+                ><h3>
+                  <v-icon>mdi-information</v-icon>
+                  <small>{{ 'Legend' }}</small>
+                </h3></v-sheet
+              >
+              <div
+                dense
+                style="max-height: 200px; overflow-y: auto"
+                class="mb-5 pa-2"
+              >
+                <v-chip
+                  v-for="(item, key) in colors"
+                  :key="key"
+                  label
+                  class="ma-1"
+                  color="white--text"
+                  :style="`background-color: ${item}`"
+                  >{{ key }}</v-chip
+                >
+              </div>
+
               <v-sheet class="grey lighten-3 pa-2"
                 ><h3>
                   <v-icon>mdi-view-list</v-icon>
                   <small>{{ $t('entity') }}</small>
                 </h3></v-sheet
               >
-              <v-list dense style="max-height: 600px; overflow-y: auto">
+              <v-list dense style="max-height: 400px; overflow-y: auto">
                 <v-list-item
                   v-for="(item, key) in nodes"
                   :key="key"
@@ -273,6 +301,8 @@ export default class PageCategory extends Vue {
 
   fromArray: any = []
   toArray: any = []
+
+  colors: any = {}
 
   options: any = {
     nodes: {
@@ -497,6 +527,7 @@ export default class PageCategory extends Vue {
             from,
             to,
             value: count,
+            slug: commodity,
             title: `${commodity} (${count})`,
             // label: `${commodity} (${count})`,
             id: index,
@@ -505,6 +536,7 @@ export default class PageCategory extends Vue {
                 enabled: true,
               },
             },
+            color: this.getColor(commodity),
           }
 
           edgeFreq[index] = count
@@ -555,7 +587,6 @@ export default class PageCategory extends Vue {
       nodes.push(node)
     }
 
-    this.nodes = nodes
     this.edges = edges
 
     this.nodesMap = nodesMap2
@@ -565,6 +596,18 @@ export default class PageCategory extends Vue {
     // console.log(edgeMap2)
 
     this.loading = false
+
+    this.nodes = nodes
+  }
+
+  getColor(value: string) {
+    const colors = this.colors
+    if (!colors[value]) {
+      colors[value] = getRandomColor()
+      this.colors = colors
+    }
+
+    return colors[value]
   }
 
   onNodeSelected(value: any) {
@@ -639,5 +682,14 @@ export default class PageCategory extends Vue {
   stabilized() {
     this.options.physics.enabled = false
   }
+}
+
+function getRandomColor() {
+  const letters = '0123456789ABCDEF'
+  let color = '#'
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)]
+  }
+  return color
 }
 </script>

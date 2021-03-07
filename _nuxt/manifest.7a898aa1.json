@@ -1,0 +1,12 @@
+{
+  "name": "DEPCHA可視化プロトタイプ",
+  "short_name": "DEPCHA",
+  "description": "DEPCHA - Digital Edition Publishing Cooperative for Historical Accountsを用いた可視化プロトタイプです。",
+  "icons": [],
+  "start_url": "/depcha/?standalone=true",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "ja",
+  "orientation": "portrait"
+}

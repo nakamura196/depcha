@@ -11,12 +11,22 @@
     </v-sheet>
 
     <v-container class="my-5">
+      <h2>{{ $t(title) }}</h2>
+      <p class="mt-2">
+        {{
+          $t(`The "thres" query parameter reduces the number of relations
+        displayed.`) +
+          ' ' +
+          (topFlag ? $t(`Top ${max} relations are displayed.`) : '')
+        }}
+      </p>
+
       <v-row dense>
         <v-col cols="12" :sm="3">
           <!-- Main -->
           <v-card v-if="false" flat outlined class="mb-5">
             <v-img
-              v-if="nodesMap[u] && nodesMap[u].image"
+              v-if="nodesMap[u] && nodesMap[u].image && false"
               :src="nodesMap[u].image"
               contain
               style="height: 150px"
@@ -65,6 +75,7 @@
 
           <v-card v-if="otherId" flat outlined class="mb-5">
             <v-img
+              v-if="false"
               :src="
                 otherNode && otherNode.image
                   ? otherNode.image
@@ -108,6 +119,58 @@
               </v-card-actions>
             </template>
           </v-card>
+
+          <div v-if="fromArray.length > 0" class="mb-5">
+            <v-sheet class="grey lighten-3 pa-2"
+              ><h3>
+                <v-icon>mdi-view-list</v-icon>
+                <small>{{ 'From' }}</small>
+              </h3></v-sheet
+            >
+            <v-list dense style="max-height: 200px; overflow-y: auto">
+              <v-list-item v-for="(item, key) in fromArray" :key="key">
+                <v-list-item-avatar>
+                  <v-img :src="nodesMap[item.from].image"></v-img>
+                </v-list-item-avatar>
+
+                <v-list-item-content>
+                  <v-list-item-title
+                    v-text="nodesMap[item.from].label"
+                  ></v-list-item-title>
+                </v-list-item-content>
+
+                <v-list-item-action>
+                  {{ item.title }}
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </div>
+
+          <div v-if="toArray.length > 0">
+            <v-sheet class="grey lighten-3 pa-2"
+              ><h3>
+                <v-icon>mdi-view-list</v-icon>
+                <small>{{ 'To' }}</small>
+              </h3></v-sheet
+            >
+            <v-list dense style="max-height: 200px; overflow-y: auto">
+              <v-list-item v-for="(item, key) in toArray" :key="key">
+                <v-list-item-avatar>
+                  <v-img :src="nodesMap[item.to].image"></v-img>
+                </v-list-item-avatar>
+
+                <v-list-item-content>
+                  <v-list-item-title
+                    v-text="nodesMap[item.to].label"
+                  ></v-list-item-title>
+                </v-list-item-content>
+
+                <v-list-item-action>
+                  {{ item.title }}
+                </v-list-item-action>
+              </v-list-item>
+            </v-list>
+          </div>
         </v-col>
         <v-col cols="12" :sm="9">
           <v-row>
@@ -189,6 +252,9 @@ export default class PageCategory extends Vue {
 
   otherId: string = ''
 
+  max: Number = 100
+  topFlag: boolean = false
+
   /// /////////////
 
   nodes: any = []
@@ -196,6 +262,9 @@ export default class PageCategory extends Vue {
 
   nodesMap: any = {}
   edgeMap: any = {}
+
+  fromArray: any = []
+  toArray: any = []
 
   options: any = {
     nodes: {
@@ -268,46 +337,11 @@ export default class PageCategory extends Vue {
     this.search()
   }
 
-  async getTo() {
-    const g = this.$route.query.g || 'http://example.org/depcha.ward_ledger.1'
-
-    const query2 =
-      `
-    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX dct: <http://purl.org/dc/terms/>
-    PREFIX gams: <https://gams.uni-graz.at/o:gams-ontology#>
-    PREFIX gn: <http://www.geonames.org/ontology#>
-    PREFIX functx: <http://www.functx.com>
-    PREFIX bk: <https://gams.uni-graz.at/o:depcha.bookkeeping#>
-    PREFIX t: <http://www.tei-c.org/ns/1.0>
-            
-    SELECT DISTINCT ?to
-    FROM <` +
-      g +
-      `>
-    WHERE {
-      ?transfer bk:to ?to.
-    }
-    ORDER BY ?transfer
-    `
-
-    const url2 =
-      'https://dydra.com/naoki_cocaze/depcha-analysis/sparql?output=json&query=' +
-      encodeURIComponent(query2)
-
-    const res = await axios.get(url2)
-    const results = res.data
-  }
-
   async search() {
     this.loading = true
     // this.getTo()
 
     const g = this.$route.query.g || 'http://example.org/depcha.ward_ledger.1'
-
-    const to2 = 'https://gams.uni-graz.at/o:depcha.ward_ledger.1#ThosWardLtd'
 
     // const bind = `BIND(<` + to2 + `> as ?to)`
     const bind = ''
@@ -358,6 +392,8 @@ export default class PageCategory extends Vue {
     const edges = []
     const nodesMap: any = {}
     const edgeMap: any = {}
+
+    let edgeCount = 0
 
     for (let i = 0; i < results.length; i++) {
       const obj = results[i]
@@ -413,14 +449,20 @@ export default class PageCategory extends Vue {
         edgeMap[from][to] = {}
       }
 
-      const commodity = obj.commodity
+      const commodity = obj.commodity || 'Money'
       if (!edgeMap[from][to][commodity]) {
         edgeMap[from][to][commodity] = 0
       }
 
       edgeMap[from][to][commodity] += 1
 
+      edgeCount += 1
+
       /// /
+    }
+
+    if (edgeCount > this.max) {
+      this.topFlag = true
     }
 
     /// ///
@@ -428,49 +470,81 @@ export default class PageCategory extends Vue {
     const nodesMap2: any = {}
     const edgeMap2: any = {}
 
+    const edgeFreq: any = {}
+
+    let index = 0
+
+    const thres = this.$route.query.thres || 0
+
     for (const from in edgeMap) {
       for (const to in edgeMap[from]) {
         for (const commodity in edgeMap[from][to]) {
           const count = edgeMap[from][to][commodity]
-          if (count > 1) {
-            if (!nodesMap2[from]) {
-              nodesMap2[from] = nodesMap[from]
-            }
 
-            if (!nodesMap2[to]) {
-              nodesMap2[to] = nodesMap[to]
-            }
-
-            edges.push({
-              from,
-              to,
-              value: count,
-              title: `${commodity} (${count})`,
-              // label: `${commodity} (${count})`,
-            })
-
-            if (!edgeMap2[from]) {
-              edgeMap2[from] = {}
-            }
-
-            if (!edgeMap2[from][to]) {
-              edgeMap2[from][to] = {}
-            }
-
-            if (!edgeMap2[from][to][commodity]) {
-              edgeMap2[from][to][commodity] = 0
-            }
-
-            edgeMap2[from][to][commodity] += 1
+          if (count < thres) {
+            continue
           }
+
+          edgeMap2[index] = {
+            from,
+            to,
+            value: count,
+            title: `${commodity} (${count})`,
+            // label: `${commodity} (${count})`,
+            id: index,
+            arrows: {
+              to: {
+                enabled: true,
+              },
+            },
+          }
+
+          edgeFreq[index] = count
+
+          index += 1
         }
       }
     }
 
+    // ソート
+    const arr = Object.keys(edgeFreq).map((e) => ({
+      key: e,
+      value: edgeFreq[e],
+    }))
+
+    arr.sort(function (a, b) {
+      if (a.value < b.value) return 1
+      if (a.value > b.value) return -1
+      return 0
+    })
+
+    for (let i = 0; i < arr.length; i++) {
+      const obj = arr[i]
+
+      const edge = edgeMap2[obj.key]
+
+      const from = edge.from
+      const to = edge.to
+
+      if (!nodesMap2[from]) {
+        nodesMap2[from] = nodesMap[from]
+      }
+
+      if (!nodesMap2[to]) {
+        nodesMap2[to] = nodesMap[to]
+      }
+
+      edges.push(edge)
+
+      if (i > this.max) {
+        break
+      }
+    }
+
+    // ノード登録
     for (const uri in nodesMap2) {
       const node = nodesMap2[uri]
       nodes.push(node)
-      // node.index = Object.keys(node).length
     }
 
     this.nodes = nodes
@@ -479,7 +553,7 @@ export default class PageCategory extends Vue {
     this.nodesMap = nodesMap2
 
     // 繋がりを一覧する際に使える？
-    this.edgeMap = edgeMap2
+    this.edgeMap = edgeMap
     // console.log(edgeMap2)
 
     this.loading = false
@@ -527,9 +601,31 @@ export default class PageCategory extends Vue {
         // this.search(uri)
       } else {
       }
+
+      this.getList(uri)
     } else {
       console.log({ uri })
     }
+  }
+
+  getList(uri: string) {
+    const edges = this.edges
+    const toArray = []
+    const fromArray = []
+    for (let i = 0; i < edges.length; i++) {
+      const edge = edges[i]
+
+      if (edge.from === uri) {
+        toArray.push(edge)
+      }
+
+      if (edge.to === uri) {
+        fromArray.push(edge)
+      }
+    }
+
+    this.toArray = toArray
+    this.fromArray = fromArray
   }
 
   stabilized() {

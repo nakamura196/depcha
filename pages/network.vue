@@ -502,8 +502,9 @@ export default class PageCategory extends Vue {
     for (let i = 0; i < results.length; i++) {
       const obj = results[i]
       froms[obj.from] =
-        obj.from_name.replace('\n', '').replace(/\s+/g, ' ') || obj.from
-      tos[obj.to] = obj.to_name.replace('\n', '').replace(/\s+/g, ' ') || obj.to
+        obj.from_name.replace('\n', ' ').replace(/\s+/g, ' ') || obj.from
+      tos[obj.to] =
+        obj.to_name.replace('\n', ' ').replace(/\s+/g, ' ') || obj.to
       if (obj.commodity) {
         commodities[obj.commodity] = obj.commodity
       }
@@ -661,7 +662,7 @@ export default class PageCategory extends Vue {
       if (!nodesMap[from]) {
         let fromName =
           obj.from_name || obj.from.split('/')[obj.from.split('/').length - 1]
-        fromName = fromName.replace('\n', '').replace(/\s+/g, ' ') // .split('  ').join(' ')
+        fromName = fromName.replace('\n', ' ').replace(/\s+/g, ' ') // .split('  ').join(' ')
 
         nodesMap[from] = {
           label: fromName,

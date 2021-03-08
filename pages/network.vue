@@ -10,17 +10,77 @@
       </v-container>
     </v-sheet>
 
-    <v-container class="my-5">
-      <h2>{{ $t(title) }}</h2>
+    <v-container class="mt-5">
+      <h2>{{ title }}</h2>
       <p class="mt-2">
         {{
-          $t(`The "thres" query parameter reduces the number of relations
-        displayed.`) +
+          `The "thres" query parameter reduces the number of relations
+        displayed.` +
           ' ' +
-          (topFlag ? $t(`Top ${max} relations are displayed.`) : '')
+          (topFlag ? `Top ${max} relations are displayed.` : '')
         }}
       </p>
+    </v-container>
 
+    <v-sheet class="grey lighten-3 pt-2 mb-2"
+      ><v-container>
+        <v-row>
+          <v-col cols="12" sm="3">
+            <v-select
+              v-model="from"
+              dense
+              :items="froms"
+              attach
+              chips
+              label="From"
+              multiple
+              @keydown.enter="filter(false)"
+            ></v-select>
+          </v-col>
+          <v-col cols="12" sm="3">
+            <v-select
+              v-model="to"
+              dense
+              :items="tos"
+              attach
+              chips
+              label="To"
+              multiple
+              @keydown.enter="filter(false)"
+            ></v-select>
+          </v-col>
+          <v-col cols="12" sm="3"
+            ><v-select
+              v-model="commodity"
+              dense
+              :items="commodities"
+              attach
+              chips
+              label="Commodity"
+              multiple
+              @keydown.enter="filter(false)"
+            ></v-select
+          ></v-col>
+          <v-col cols="12" sm="1">
+            <v-text-field
+              v-model="thres"
+              class="mt-3 pt-0"
+              type="number"
+              label="Threshold"
+              @keydown.enter="filter(false)"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" sm="2">
+            <v-btn color="primary" class="ma-1" @click="filter(false)">{{
+              $t('search')
+            }}</v-btn>
+            <v-btn class="ma-1" @click="filter(true)">{{ $t('clear') }}</v-btn>
+          </v-col>
+        </v-row>
+      </v-container></v-sheet
+    >
+
+    <v-container>
       <v-row dense>
         <v-col cols="12" :sm="3">
           <!-- Main -->
@@ -328,6 +388,18 @@ export default class PageCategory extends Vue {
     layout: { randomSeed: 2 },
   }
 
+  /// ///
+
+  tos: any = []
+  froms: any = []
+  commodities: any = []
+
+  from: string[] = []
+  to: string[] = []
+  commodity: string[] = []
+
+  thres: number = 0
+
   /// /////////////
 
   get otherNode() {
@@ -372,7 +444,99 @@ export default class PageCategory extends Vue {
 
   // state
   mounted() {
+    this.pre()
     this.search()
+  }
+
+  async pre() {
+    const g = this.$route.query.g || 'http://example.org/depcha.ward_ledger.1'
+
+    this.thres = this.$route.query.thres ? Number(this.$route.query.thres) : 0
+
+    const query =
+      `
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX dct: <http://purl.org/dc/terms/>
+    PREFIX gams: <https://gams.uni-graz.at/o:gams-ontology#>
+    PREFIX gn: <http://www.geonames.org/ontology#>
+    PREFIX functx: <http://www.functx.com>
+    PREFIX bk: <https://gams.uni-graz.at/o:depcha.bookkeeping#>
+    PREFIX t: <http://www.tei-c.org/ns/1.0>
+            
+    SELECT DISTINCT ?from ?from_name ?to ?to_name ?commodity
+    FROM <` +
+      g +
+      `>
+    WHERE {
+      ?transaction rdf:type bk:Transaction;
+                            bk:consistsOf ?transfer.
+      
+      ?transfer bk:from ?from;
+                          bk:to ?to;
+                          bk:transfers ?measure.
+      optional { ?from bk:name ?from_name . }
+      optional { ?to bk:name ?to_name . }
+      
+      OPTIONAL{ ?measure bk:commodity ?commodity }.
+    }
+    ORDER BY ?transfer
+    `
+
+    const url =
+      'https://dydra.com/naoki_cocaze/depcha-analysis/sparql?output=json&query=' +
+      encodeURIComponent(query)
+
+    const res = await axios.get(url)
+    const results = res.data
+
+    const map: any = {}
+    const froms: any = {}
+    const tos: any = {}
+    const commodities: any = {}
+    map.froms = froms
+    map.tos = tos
+    map.commodities = commodities
+
+    for (let i = 0; i < results.length; i++) {
+      const obj = results[i]
+      froms[obj.from] =
+        obj.from_name.replace('\n', '').replace(/\s+/g, ' ') || obj.from
+      tos[obj.to] = obj.to_name.replace('\n', '').replace(/\s+/g, ' ') || obj.to
+      if (obj.commodity) {
+        commodities[obj.commodity] = obj.commodity
+      }
+    }
+
+    for (const key in map) {
+      const array = []
+      const obj = map[key]
+      const keys = Object.keys(obj)
+      keys.sort()
+      for (const value of keys) {
+        array.push({
+          text: obj[value],
+          value,
+        })
+      }
+
+      ;(this as any)[key] = array
+    }
+
+    /*
+    const froms2 = []
+    for (const key in froms) {
+      froms2.push({
+        text: froms[key],
+        value: key,
+      })
+    }
+
+    this.froms = froms2
+    this.tos = tos
+    this.commodities = commodities
+    */
   }
 
   async search() {
@@ -381,8 +545,55 @@ export default class PageCategory extends Vue {
 
     const g = this.$route.query.g || 'http://example.org/depcha.ward_ledger.1'
 
+    const fields = ['from', 'to', 'commodity']
+    for (let j = 0; j < fields.length; j++) {
+      const field = fields[j]
+
+      let query = this.$route.query[field]
+      if (typeof query === 'string') {
+        query = [query]
+      }
+
+      ;(this as any)[field] = query || []
+    }
+
     // const bind = `BIND(<` + to2 + `> as ?to)`
     const bind = ''
+
+    const filters = []
+    const filterCommodities = []
+
+    for (let j = 0; j < fields.length; j++) {
+      const field = fields[j]
+      const array = (this as any)[field]
+      if (array) {
+        const tmp = []
+        for (let i = 0; i < array.length; i++) {
+          if (field === 'commodity') {
+            tmp.push(`?${field} = '${array[i]}'`)
+          } else {
+            tmp.push(`?${field} = <${array[i]}>`)
+          }
+        }
+
+        if (tmp.length === 0) {
+          continue
+        }
+        const filter = `filter (${tmp.join('||')})`
+
+        if (field === 'commodity') {
+          filterCommodities.push(filter)
+        } else {
+          filters.push(filter)
+        }
+      }
+    }
+
+    let filterCommoditiesStr = ''
+    if (filterCommodities.length > 0) {
+      filterCommoditiesStr =
+        '?measure bk:commodity ?commodity . ' + filterCommodities.join('\n')
+    }
 
     const query =
       `
@@ -411,10 +622,16 @@ export default class PageCategory extends Vue {
       ?transfer bk:from ?from;
                           bk:to ?to;
                           bk:transfers ?measure.
+      ` +
+      filters.join('\n') +
+      `
       optional { ?from bk:name ?from_name . }
       optional { ?to bk:name ?to_name . }
       
-      OPTIONAL{ ?measure bk:commodity ?commodity }.
+      OPTIONAL{ ?measure bk:commodity ?commodity . } .
+      ` +
+      filterCommoditiesStr +
+      `
     }
     ORDER BY ?transfer
     `
@@ -490,11 +707,11 @@ export default class PageCategory extends Vue {
       const commodity = obj.commodity || 'Money'
       if (!edgeMap[from][to][commodity]) {
         edgeMap[from][to][commodity] = 0
+
+        edgeCount += 1
       }
 
       edgeMap[from][to][commodity] += 1
-
-      edgeCount += 1
 
       /// /
     }
@@ -512,7 +729,7 @@ export default class PageCategory extends Vue {
 
     let index = 0
 
-    const thres = this.$route.query.thres || 0
+    const thres = this.thres
 
     for (const from in edgeMap) {
       for (const to in edgeMap[from]) {
@@ -603,8 +820,16 @@ export default class PageCategory extends Vue {
   getColor(value: string) {
     const colors = this.colors
     if (!colors[value]) {
-      colors[value] = getRandomColor()
-      this.colors = colors
+      colors[value] = stringToColour(value) // intToRGB(hashCode(value)) // getRandomColor()
+
+      // ソート
+      const colors2: any = {}
+      const keys = Object.keys(colors)
+      keys.sort()
+      for (const key of keys) {
+        colors2[key] = colors[key]
+      }
+      this.colors = colors2
     }
 
     return colors[value]
@@ -682,14 +907,38 @@ export default class PageCategory extends Vue {
   stabilized() {
     this.options.physics.enabled = false
   }
+
+  filter(clearFlag: boolean = false) {
+    const query: any = {
+      g: this.g,
+    }
+    if (this.thres > 0) {
+      query.thres = this.thres
+    }
+    if (!clearFlag) {
+      query.from = this.from
+      query.to = this.to
+      query.commodity = this.commodity
+    }
+    location.href =
+      process.env.BASE_URL +
+      this.localePath({
+        name: 'network',
+        query,
+      })
+  }
 }
 
-function getRandomColor() {
-  const letters = '0123456789ABCDEF'
-  let color = '#'
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)]
+const stringToColour = function (str: any) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
   }
-  return color
+  let colour = '#'
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff
+    colour += ('00' + value.toString(16)).substr(-2)
+  }
+  return colour
 }
 </script>
